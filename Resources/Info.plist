@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>CrossTerminal</string>
+    <key>CFBundleDisplayName</key>
+    <string>CrossTerminal</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.crossterminal.app</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>CrossTerminal</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>CrossTerminal 需要读取访达当前窗口路径，并在你选择的终端中打开该目录。</string>
+</dict>
+</plist>

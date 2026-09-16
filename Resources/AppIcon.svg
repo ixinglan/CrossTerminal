@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1026"/>
+      <stop offset="0.55" stop-color="#15224A"/>
+      <stop offset="1" stop-color="#241B4D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.40" r="0.65">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2DE2E6"/>
+      <stop offset="1" stop-color="#C04BE6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 满铺方形背景（系统会套圆角遮罩） -->
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#glow)"/>
+
+  <!-- 内描边 -->
+  <rect x="86" y="86" width="852" height="852" rx="188" fill="none" stroke="#3A4C78" stroke-opacity="0.55" stroke-width="3"/>
+
+  <!-- 轨道环（科幻/传送门感） -->
+  <circle cx="512" cy="512" r="252" fill="none" stroke="#2DE2E6" stroke-opacity="0.22" stroke-width="3"/>
+  <circle cx="512" cy="512" r="304" fill="none" stroke="#C04BE6" stroke-opacity="0.16" stroke-width="2" stroke-dasharray="6 20"/>
+
+  <!-- 十字准星（暗示 Cross） -->
+  <g stroke="#7C8BFF" stroke-opacity="0.16" stroke-width="2">
+    <line x1="512" y1="120" x2="512" y2="904"/>
+    <line x1="120" y1="512" x2="904" y2="512"/>
+  </g>
+
+  <!-- 终端提示符 > （霓虹渐变描边） -->
+  <path d="M408 388 L528 512 L408 636" fill="none" stroke="url(#neon)" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 光标块 _ -->
+  <rect x="560" y="556" width="104" height="32" rx="9" fill="url(#neon)"/>
+
+  <!-- 角落点缀 -->
+  <g fill="#2DE2E6" fill-opacity="0.5">
+    <circle cx="170" cy="170" r="6"/>
+    <circle cx="854" cy="170" r="6"/>
+    <circle cx="170" cy="854" r="6"/>
+    <circle cx="854" cy="854" r="6"/>
+  </g>
+</svg>
