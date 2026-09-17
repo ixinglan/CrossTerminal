@@ -54,7 +54,11 @@ enum TerminalManager {
         strategy: .appleScript(#"""
 tell application "Terminal"
   activate
-  do script "cd " & quoted form of "{PATH}"
+  if (exists front window) then
+    do script "cd " & quoted form of "{PATH}" in selected tab of front window
+  else
+    do script "cd " & quoted form of "{PATH}"
+  end if
 end tell
 """#)
     )
