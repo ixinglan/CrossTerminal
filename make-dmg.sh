@@ -5,13 +5,12 @@
 #   版本号默认取环境变量 GITHUB_REF_NAME（形如 v1.0.0），也可手动传参；v 前缀会自动去掉。
 #   产物：build/CrossTerminal-<版本>.dmg
 #
-# 签名与公证（CI 发布用）：
-#   - 设置环境变量 SIGN_ID（Developer ID Application 证书名）即走「正式发布」路径：
-#       codesign 用 Developer ID（hardened runtime + 时间戳），dmg 上传 Apple 公证后 staple 票据。
-#   - 公证凭证二选一：
-#       a) App Store Connect API Key（推荐）：APPLE_API_KEY_P8(.p8 base64) + APPLE_API_KEY_ID + APPLE_API_ISSUER
-#       b) Apple ID + app-specific 密码：APPLE_ID + APPLE_APP_PASSWORD + APPLE_TEAM_ID
-#   - 未设置 SIGN_ID / 公证变量时，自动回退 ad-hoc 签名、跳过公证（便于本地调试）。
+# 签名与公证（CI 发布用，对应 GitHub Secrets）：
+#   - 证书：BUILD_CERTIFICATE_BASE64(p12 的 base64) + P12_PASSWORD(解 p12) + KEYCHAIN_PASSWORD(CI 临时钥匙串)，
+#     由 workflow 的「Install Apple signing certificate」步骤导入钥匙串。
+#   - 证书名(SIGN_ID)无需配置：脚本自动从已安装钥匙串选取 Developer ID Application 身份。
+#   - 公证：APPLE_ID + APPLE_APP_PASSWORD(app 专用密码) + APPLE_TEAM_ID，交给 `xcrun notarytool`。
+#   - 以上变量均未设置时，自动回退 ad-hoc 签名、跳过公证（便于本地调试）。
 #
 # 设计取舍：
 #   - 用 hdiutil 而非 create-dmg：前者系统自带、零依赖，且在 CI（无 GUI）环境稳定可用。
@@ -27,8 +26,11 @@ STAGE=".build/dmg-stage"
 APP="$STAGE/$APP_NAME.app"
 DMG="build/$APP_NAME-$VERSION.dmg"
 
-# 签名标识：CI 经 secrets.SIGN_ID 传入 Developer ID Application 证书全名；本地未设则 ad-hoc
+# 签名标识：优先用环境变量 SIGN_ID；否则从已安装钥匙串自动选取 Developer ID Application 证书
 SIGN_ID="${SIGN_ID:-}"
+if [ -z "$SIGN_ID" ]; then
+  SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+fi
 
 echo "==> [1/6] 交叉编译 universal 二进制 (arm64 + x86_64)"
 swift build -c release --arch arm64   --build-path .build/arm64
@@ -53,7 +55,7 @@ if [ -n "$SIGN_ID" ]; then
   # --options runtime 开启 hardened runtime（公证必需）；--timestamp 联网时间戳
   codesign --force --deep --options runtime --timestamp --sign "$SIGN_ID" "$APP"
 else
-  echo "    未设置 SIGN_ID，回退 ad-hoc 签名（仅本地/调试用）"
+  echo "    未找到 Developer ID 证书，回退 ad-hoc 签名（仅本地/调试用）"
   codesign --force --deep --sign - "$APP"
 fi
 
@@ -68,22 +70,19 @@ mkdir -p build
 rm -f "$DMG"
 hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 
-echo "==> [6/6] 公证 (如已配置 Apple 公证凭证)"
-if [ -n "${APPLE_API_KEY_P8:-}" ] && [ -n "${APPLE_API_KEY_ID:-}" ] && [ -n "${APPLE_API_ISSUER:-}" ]; then
-  echo "    使用 App Store Connect API Key 公证"
-  API_KEY_DIR="${RUNNER_TEMP:-/tmp}"
-  API_KEY_PATH="$API_KEY_DIR/AuthKey_${APPLE_API_KEY_ID}.p8"
-  echo -n "$APPLE_API_KEY_P8" | base64 --decode -o "$API_KEY_PATH"
-  xcrun notarytool submit "$DMG" --key "$API_KEY_PATH" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" --wait
-  xcrun stapler staple "$DMG"
-  echo "    公证票据已 staple 到 dmg"
+echo "==> [6/6] 公证 (使用 Apple ID + app-specific 密码)"
+# 公证前提：必须同时具备 Developer ID 签名(SIGN_ID) 与 Apple ID 三件套；
+# 仅配置了公证凭证但没有有效 Developer ID 证书时，ad-hoc 签名无法公证，给出明确提示并跳过。
+if [ -z "$SIGN_ID" ]; then
+  echo "    未检测到 Developer ID 签名标识(SIGN_ID)，无法公证（需先在 CI 配置 BUILD_CERTIFICATE_BASE64 等证书 Secrets）"
+  echo "    跳过 notarization"
 elif [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_APP_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
   echo "    使用 Apple ID + app-specific 密码公证"
   xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
   xcrun stapler staple "$DMG"
   echo "    公证票据已 staple 到 dmg"
 else
-  echo "    未配置公证凭证，跳过 notarization（ad-hoc 签名产物）"
+  echo "    未配置公证凭证(APPLE_ID/APPLE_APP_PASSWORD/APPLE_TEAM_ID)，跳过 notarization"
 fi
 
 echo "完成: $DMG ($(du -h "$DMG" | cut -f1))"

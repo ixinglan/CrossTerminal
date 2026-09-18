@@ -126,6 +126,13 @@ macOS 14.0+。
 
 - 未配置签名/公证 Secrets 时自动回退 ad-hoc 签名、跳过公证（便于调试）。
 - 本地可用 `./make-dmg.sh` 复现同样产物（需本机钥匙串有对应证书，或设置 `SIGN_ID` 等环境变量）。
-- 仓库需在 `Settings → Secrets and variables → Actions` 配置：`CERT_P12`、`CERT_PASSWORD`、`SIGN_ID`，以及公证凭证（二选一）：`APPLE_API_KEY_P8` / `APPLE_API_KEY_ID` / `APPLE_API_ISSUER`，或 `APPLE_ID` / `APPLE_APP_PASSWORD` / `APPLE_TEAM_ID`。
+- 仓库需在 `Settings → Secrets and variables → Actions` 配置以下 6 个 Secrets：
+  - `BUILD_CERTIFICATE_BASE64`：Developer ID Application 证书（p12）经 base64 编码后的字符串。
+  - `P12_PASSWORD`：导出 p12 时设置的密码。
+  - `KEYCHAIN_PASSWORD`：CI 临时钥匙串的密码（任意强随机串即可，仅 CI 内部使用）。
+  - `APPLE_ID`：Apple ID 邮箱（用于公证）。
+  - `APPLE_APP_PASSWORD`：Apple ID「App 专用密码」（用于公证，非登录密码），在 `appleid.apple.com` 的「安全」项生成。
+  - `APPLE_TEAM_ID`：开发者团队 ID（10 位大写字母数字，用于公证）。
+  - 说明：签名标识（`SIGN_ID`）无需配置，脚本从已安装钥匙串自动选取 Developer ID Application 证书；未配置上述证书类 Secrets 时自动回退 ad-hoc 签名并跳过公证。
 
 详见仓库 `.github/workflows/release.yml` 与 `make-dmg.sh`。
