@@ -1,0 +1,33 @@
+name: Release DMG
+
+# 触发：推送形如 v1.0.0 的 tag 时自动构建并发布
+on:
+  push:
+    tags:
+      - 'v*'
+
+# 需要写权限，否则 softprops/action-gh-release 创建 Release 会 403。
+# 若仓库默认是 Read-only，请到仓库 Settings -> Actions -> Workflow permissions 改为 Read and write。
+permissions:
+  contents: write
+
+jobs:
+  build-dmg:
+    name: Build and release DMG (universal)
+    runs-on: macos-15   # Apple Silicon runner，自带 Xcode/Swift，可交叉编译 x86_64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build universal binary and package DMG
+        run: ./make-dmg.sh "${GITHUB_REF_NAME}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 自动从本次 tag 的提交生成 Release 说明
+          generate_release_notes: true
+          # 上传 make-dmg.sh 产出的 dmg
+          files: build/CrossTerminal-*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

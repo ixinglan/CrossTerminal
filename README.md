@@ -119,3 +119,9 @@ CrossTerminal/
 ### 平台要求
 
 macOS 14.0+。
+
+## 自动发布（CI）
+
+推送 `v*` tag 即触发 GitHub Actions（`.github/workflows/release.yml`）：在 macOS runner 上编译 universal 二进制、用 `hdiutil` 打包 DMG，并自动创建 GitHub Release 上传 `CrossTerminal-x.y.z.dmg`。本地可用 `./make-dmg.sh` 复现同样产物。
+
+详见仓库 `.github/workflows/release.yml` 与 `make-dmg.sh`。
