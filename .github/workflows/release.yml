@@ -13,13 +13,42 @@ permissions:
 
 jobs:
   build-dmg:
-    name: Build and release DMG (universal)
+    name: Build, sign, notarize and release DMG (universal)
     runs-on: macos-15   # Apple Silicon runner，自带 Xcode/Swift，可交叉编译 x86_64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build universal binary and package DMG
+      - name: Install Apple signing certificate
+        # 仅在配置了 CERT_P12 时，把 Developer ID Application 证书(p12)安装到临时 keychain；
+        # 未配置则跳过（make-dmg.sh 会回退 ad-hoc 签名）。
+        env:
+          CERT_P12: ${{ secrets.CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+        run: |
+          if [ -z "$CERT_P12" ]; then
+            echo "未配置 CERT_P12，跳过证书安装（将使用 ad-hoc 签名）"
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p "$CERT_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$CERT_PASSWORD" "$KEYCHAIN"
+          echo -n "$CERT_P12" | base64 --decode -o "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          # 允许 codesign 在不弹密码的情况下使用密钥
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$CERT_PASSWORD" "$KEYCHAIN"
+
+      - name: Build, sign, notarize and package DMG
+        env:
+          SIGN_ID: ${{ secrets.SIGN_ID }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: ./make-dmg.sh "${GITHUB_REF_NAME}"
 
       - name: Create GitHub Release
@@ -27,7 +56,7 @@ jobs:
         with:
           # 自动从本次 tag 的提交生成 Release 说明
           generate_release_notes: true
-          # 上传 make-dmg.sh 产出的 dmg
+          # 上传 make-dmg.sh 产出的 dmg（已含公证票据）
           files: build/CrossTerminal-*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

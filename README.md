@@ -122,6 +122,10 @@ macOS 14.0+。
 
 ## 自动发布（CI）
 
-推送 `v*` tag 即触发 GitHub Actions（`.github/workflows/release.yml`）：在 macOS runner 上编译 universal 二进制、用 `hdiutil` 打包 DMG，并自动创建 GitHub Release 上传 `CrossTerminal-x.y.z.dmg`。本地可用 `./make-dmg.sh` 复现同样产物。
+推送 `v*` tag 即触发 GitHub Actions（`.github/workflows/release.yml`）：在 macOS runner 上编译 universal 二进制、用 Developer ID Application 证书签名、上传 Apple 公证（Notarization）并 `staple` 票据，最后用 `hdiutil` 打包 DMG，并自动创建 GitHub Release 上传 `CrossTerminal-x.y.z.dmg`（已含公证票据，用户双击即开、无拦截）。
+
+- 未配置签名/公证 Secrets 时自动回退 ad-hoc 签名、跳过公证（便于调试）。
+- 本地可用 `./make-dmg.sh` 复现同样产物（需本机钥匙串有对应证书，或设置 `SIGN_ID` 等环境变量）。
+- 仓库需在 `Settings → Secrets and variables → Actions` 配置：`CERT_P12`、`CERT_PASSWORD`、`SIGN_ID`，以及公证凭证（二选一）：`APPLE_API_KEY_P8` / `APPLE_API_KEY_ID` / `APPLE_API_ISSUER`，或 `APPLE_ID` / `APPLE_APP_PASSWORD` / `APPLE_TEAM_ID`。
 
 详见仓库 `.github/workflows/release.yml` 与 `make-dmg.sh`。
