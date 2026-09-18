@@ -39,6 +39,7 @@ swift build -c release --arch x86_64  --build-path .build/x86_64
 ARM_BIN=".build/arm64/release/$APP_NAME"
 X86_BIN=".build/x86_64/release/$APP_NAME"
 UNI=".build/release/$APP_NAME-universal"
+mkdir -p "$(dirname "$UNI")"   # lipo 输出目录需先存在，否则报 can't create temporary output file
 lipo -create -output "$UNI" "$ARM_BIN" "$X86_BIN"
 echo "    合并后架构: $(lipo -info "$UNI" | sed 's/.*://')"
 
