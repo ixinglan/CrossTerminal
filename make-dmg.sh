@@ -61,9 +61,10 @@ else
 fi
 
 echo "==> [4/6] 准备 dmg 暂存区（含 Applications 快捷方式，便于拖拽安装）"
-rm -rf "$STAGE"
+# 注意：$APP(.app) 已在 [2/6] 组装于 $STAGE 下，且 [3/6] 已就地签名；
+# 此处严禁 rm -rf "$STAGE"（会连已签名的 .app 一起删），仅补充 Applications 软链。
 mkdir -p "$STAGE"
-cp -R "$APP" "$STAGE/"
+rm -f "$STAGE/Applications"   # 防止重复创建软链时报错
 ln -s /Applications "$STAGE/Applications"
 
 echo "==> [5/6] 制作 dmg (hdiutil, UDZO 压缩只读)"
