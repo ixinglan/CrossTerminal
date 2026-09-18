@@ -3,6 +3,8 @@
 .swiftpm/
 Package.resolved
 
+.vscode/
+
 # 本项目的构建产物（打包出的 .app 与中间图标）
 build/
 
